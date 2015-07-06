@@ -1,6 +1,7 @@
 package com.android.larrimorea.musicapp;
 
 import android.app.Fragment;
+import android.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -40,11 +41,17 @@ public class MainActivity extends OAuthActivity {
 
     @Override
     public void setLayoutView() {
-
+        replaceCurrentFragment(new ProfileFragment(), false);
     }
 
     @Override
     public void replaceCurrentFragment(Fragment newFragment, boolean addToStack) {
+        FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
 
+        fragmentTransaction.replace(R.id.fragmentContainer, newFragment);
+        if(addToStack){
+            fragmentTransaction.addToBackStack(null);
+        }
+        fragmentTransaction.commit();
     }
 }
