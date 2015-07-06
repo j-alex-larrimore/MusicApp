@@ -1,38 +1,50 @@
 package com.android.larrimorea.musicapp;
 
+import android.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import us.theappacademy.oauth.OAuthParameters;
+import us.theappacademy.oauth.util.UrlBuilder;
+import us.theappacademy.oauth.view.AuthorizeFragment;
+import us.theappacademy.oauth.view.OAuthActivity;
 
-public class MainActivity extends ActionBarActivity {
+
+public class MainActivity extends OAuthActivity {
+
+    @Override
+    protected Fragment createFragment() {
+        AuthorizeFragment authorizeFragment = new AuthorizeFragment();
+
+        OAuthParameters oAuthParameters = new OAuthParameters();
+        oAuthParameters.addParameter("client_id", oauthConnection.getClientID());
+        oAuthParameters.addParameter("redirect_uri", oauthConnection.getRedirectUrl());
+        oAuthParameters.addParameter("response_type", "code");
+        oAuthParameters.addParameter("state", UrlBuilder.generateUniqueState(16));
+
+        oauthConnection.state = oAuthParameters.getValueFromParameter("state");
+
+        authorizeFragment.setOAuthParameters(oAuthParameters);
+
+        return authorizeFragment;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        oauthConnection = new SoundCloudConnection();
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    }
+
+
+    @Override
+    public void setLayoutView() {
+
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
+    public void replaceCurrentFragment(Fragment newFragment, boolean addToStack) {
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 }
