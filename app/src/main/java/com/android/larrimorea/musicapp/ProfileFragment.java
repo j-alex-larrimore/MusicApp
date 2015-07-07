@@ -47,13 +47,15 @@ public class ProfileFragment extends OAuthFragment{
         JSONObject jsonObject = JsonBuilder.jsonObjectFromString(responseString);
         setJsonObject(jsonObject);
 
-        //profileName.setText(responseString);
+        profileName.setText(responseString);
 
         try {
             String url = getJsonObject().getString("stream_url"); // your URL here
             String title = getJsonObject().getString("title");
-            String artist = getJsonObject().getString("username");
-
+            String artist = getJsonObject().getJSONObject("user").getString("username");
+            Song s = new Song(url, title, artist);
+            songList.add(s);
+            musicSrv.playSong();
             profileName.setText(url + title + artist);
         }catch(JSONException e){
             Log.e("ProfFrag", "TaskFinished" + e);
