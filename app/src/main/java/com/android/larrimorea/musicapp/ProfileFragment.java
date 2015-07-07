@@ -1,5 +1,6 @@
 package com.android.larrimorea.musicapp;
 
+import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -8,28 +9,45 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.android.larrimorea.musicapp.R;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
+import java.util.ArrayList;
 
 import us.theappacademy.oauth.OAuthParameters;
 import us.theappacademy.oauth.task.GetRequestTask;
+import us.theappacademy.oauth.util.JsonBuilder;
 import us.theappacademy.oauth.util.UrlBuilder;
 import us.theappacademy.oauth.view.OAuthFragment;
 
-/**
- * Created by Alex on 7/6/2015.
- */
-public class ProfileFragment extends OAuthFragment {
+
+public class ProfileFragment extends OAuthFragment{
     private TextView profileName;
     private TextView userName;
+    private ArrayList<Song> songList;
+    private ListView songView;
 
 
     @Override
     public void onTaskFinished(String responseString) {
-        profileName.setText(responseString);
+        JSONObject jsonObject = JsonBuilder.jsonObjectFromString(responseString);
+        setJsonObject(jsonObject);
+
+        try {
+            String url = getJsonObject().getString("stream_url"); // your URL here
+
+            profileName.setText(url);
+        }catch(JSONException e){
+            Log.e("ProfFrag", "TaskFinished" + e);
+        }
+
+
     }
 
     @Override
@@ -57,4 +75,6 @@ public class ProfileFragment extends OAuthFragment {
 
         return fragmentView;
     }
+
+
 }
