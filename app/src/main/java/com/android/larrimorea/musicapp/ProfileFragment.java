@@ -1,9 +1,13 @@
 package com.android.larrimorea.musicapp;
 
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -33,16 +37,24 @@ public class ProfileFragment extends OAuthFragment{
     private ArrayList<Song> songList;
     private ListView songView;
 
+    private MusicService musicSrv;
+    private Intent playIntent;
+    private boolean musicBound = false;
+
 
     @Override
     public void onTaskFinished(String responseString) {
         JSONObject jsonObject = JsonBuilder.jsonObjectFromString(responseString);
         setJsonObject(jsonObject);
 
+        //profileName.setText(responseString);
+
         try {
             String url = getJsonObject().getString("stream_url"); // your URL here
+            String title = getJsonObject().getString("title");
+            String artist = getJsonObject().getString("username");
 
-            profileName.setText(url);
+            profileName.setText(url + title + artist);
         }catch(JSONException e){
             Log.e("ProfFrag", "TaskFinished" + e);
         }
@@ -76,5 +88,32 @@ public class ProfileFragment extends OAuthFragment{
         return fragmentView;
     }
 
+    private ServiceConnection musicConnection = new ServiceConnection(){
 
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            MusicService.MusicBinder binder = (MusicService.MusicBinder)service;
+            musicSrv = binder.getService();
+            musicSrv.setList(songList);
+            musicBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            musicBound = false;
+        }
+    };
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if(playIntent == null){
+            playIntent = new Intent(getActivity(), MusicService.class);
+            getActivity().bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
+        }
+    }
+
+    public void songPicked(View view){
+
+    }
 }
