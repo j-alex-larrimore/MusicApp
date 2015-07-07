@@ -34,8 +34,9 @@ import us.theappacademy.oauth.view.OAuthFragment;
 public class ProfileFragment extends OAuthFragment{
     private TextView profileName;
     private TextView userName;
-    private ArrayList<Song> songList;
+    private ArrayList<Song> songList = new ArrayList<Song>();
     private ListView songView;
+    OAuthParameters oAuthParameters;
 
     private MusicService musicSrv;
     private Intent playIntent;
@@ -55,7 +56,8 @@ public class ProfileFragment extends OAuthFragment{
             String artist = getJsonObject().getJSONObject("user").getString("username");
             Song s = new Song(url, title, artist);
             songList.add(s);
-            musicSrv.playSong();
+            musicSrv.setList(songList);
+            musicSrv.playSong(oAuthParameters);
             profileName.setText(url + title + artist);
         }catch(JSONException e){
             Log.e("ProfFrag", "TaskFinished" + e);
@@ -68,7 +70,7 @@ public class ProfileFragment extends OAuthFragment{
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        OAuthParameters oAuthParameters = new OAuthParameters();
+        oAuthParameters = new OAuthParameters();
         oAuthParameters.addParameter("client_id", getOAuthConnection().getClientID());
 
 
@@ -97,6 +99,7 @@ public class ProfileFragment extends OAuthFragment{
             MusicService.MusicBinder binder = (MusicService.MusicBinder)service;
             musicSrv = binder.getService();
             musicSrv.setList(songList);
+            musicSrv.setClientID(oAuthParameters.toString());
             musicBound = true;
         }
 

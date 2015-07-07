@@ -11,6 +11,9 @@ import android.util.Log;
 
 import java.util.ArrayList;
 
+import us.theappacademy.oauth.OAuthParameters;
+import us.theappacademy.oauth.util.UrlBuilder;
+
 /**
  * Created by Alex on 7/7/2015.
  */
@@ -19,6 +22,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     private ArrayList<Song> songs;
     private int songPosn;
     private final IBinder musicBind = new MusicBinder();
+    private String clientID;
 
     @Override
     public void onCreate() {
@@ -26,6 +30,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         songPosn = 0;
         player = new MediaPlayer();
         initMusicPlayer();
+
     }
 
     public void initMusicPlayer(){
@@ -73,15 +78,17 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         }
     }
 
-    public void playSong(){
+    public void playSong(OAuthParameters oap){
         player.reset();
 
         Song playSong = songs.get(songPosn);
 
-
         try{
             //player.setDataSource(getApplicationContext(), trackUri);
-            player.setDataSource(playSong.getUrl());
+            String url = UrlBuilder.buildUrlWithParameters(playSong.getUrl(), oap);
+
+            player.setDataSource(url);
+
         }
         catch(Exception e){
             Log.e("MUSIC SERVICE", "Error setting data source", e);
@@ -93,6 +100,10 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     public void setSong(int songIndex){
         songPosn = songIndex;
+    }
+
+    public void setClientID(String id){
+        clientID = id;
     }
 
 }
