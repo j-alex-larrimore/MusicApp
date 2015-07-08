@@ -18,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -78,10 +79,11 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
             Song s = new Song(url, title, artist);
             songList.add(s);
             addSongToParse(mLoadingSong, url, title, artist);
-            musicSrv.setList(songList);
-            musicSrv.playSong();
+            displaySongs();
+            playSongList();
         }catch(JSONException e){
             Log.e("ProfFrag", "TaskFinished" + e);
+            Toast.makeText(getActivity(), "Improper Song ID #", Toast.LENGTH_SHORT).show();
         }
 
     }
@@ -410,6 +412,8 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
                 if(newSong!= ""){
                     addSong(newSong);
                     dialog.cancel();
+                    InputMethodManager inputManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    inputManager.hideSoftInputFromWindow(fragmentView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                 }
                 // Do something with value!
             }
@@ -418,6 +422,8 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
         alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
                 dialog.cancel();
+                InputMethodManager inputManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputManager.hideSoftInputFromWindow(fragmentView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
             }
         });
 
