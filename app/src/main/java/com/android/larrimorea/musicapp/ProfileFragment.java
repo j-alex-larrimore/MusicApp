@@ -2,6 +2,7 @@ package com.android.larrimorea.musicapp;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.media.AudioManager;
@@ -9,12 +10,17 @@ import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.MediaController;
 import android.widget.TextView;
@@ -45,6 +51,7 @@ import us.theappacademy.oauth.view.OAuthFragment;
 public class ProfileFragment extends OAuthFragment implements MediaController.MediaPlayerControl, View.OnClickListener {
     private ArrayList<Song> songList = new ArrayList<Song>();
     private ListView songView;
+    private Button addButton;
     OAuthParameters oAuthParameters;
 
     private MusicService musicSrv;
@@ -56,6 +63,8 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
     private MusicController mController;
     private boolean paused = false;
     private boolean playbackPaused = false;
+
+    private String newSong = "";
 
     @Override
     public void onTaskFinished(String responseString) {
@@ -94,6 +103,14 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         fragmentView = inflater.inflate(R.layout.fragment_profile, container, false);
 
+        addButton = (Button)fragmentView.findViewById(R.id.addButton);
+        addButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                makePopup();
+            }
+        });
+
         songView = (ListView)fragmentView.findViewById(R.id.song_list);
         songView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View clickView,
@@ -108,6 +125,7 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
 
         return fragmentView;
     }
+
 
     private ServiceConnection musicConnection = new ServiceConnection(){
 
@@ -352,6 +370,57 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
 
     @Override
     public void onClick(View v) {
-        songPicked(v);
+//        if(v =){
+//            songPicked(v);
+//        }
+//        else{
+//            makePopup();
+//        }
+
+    }
+
+    public void makePopup(){
+        AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
+
+        alert.setTitle("Enter your song's id #");
+
+// Set an EditText view to get user input
+        final EditText input = new EditText(getActivity());
+        alert.setView(input);
+
+        input.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                newSong = s.toString();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+
+        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                if(newSong!= ""){
+                    addSong(newSong);
+                    dialog.cancel();
+                }
+                // Do something with value!
+            }
+        });
+
+        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                dialog.cancel();
+            }
+        });
+
+        alert.show();
     }
 }
