@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.parse.Parse;
+
 import us.theappacademy.oauth.OAuthParameters;
 import us.theappacademy.oauth.util.UrlBuilder;
 import us.theappacademy.oauth.view.AuthorizeFragment;
@@ -36,6 +38,10 @@ public class MainActivity extends OAuthActivity {
     protected void onCreate(Bundle savedInstanceState) {
         oauthConnection = new SoundCloudConnection();
         super.onCreate(savedInstanceState);
+        Parse.enableLocalDatastore(this);
+
+        Parse.initialize(this, "geQCZnYWdu5r9622GIzP5Cgz1NTKjAVLn3Dobgdn", "QovVsD8wtmEjfrSkGWxyZRbtvOn8afaIqIBHa0Se");
+
     }
 
 

@@ -17,6 +17,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.android.larrimorea.musicapp.R;
+import com.parse.ParseObject;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,6 +42,7 @@ public class ProfileFragment extends OAuthFragment{
     private MusicService musicSrv;
     private Intent playIntent;
     private boolean musicBound = false;
+    private String mLoadingSong;
 
 
     @Override
@@ -56,6 +58,7 @@ public class ProfileFragment extends OAuthFragment{
             String artist = getJsonObject().getJSONObject("user").getString("username");
             Song s = new Song(url, title, artist);
             songList.add(s);
+            addSong(mLoadingSong, url, title, artist);
             musicSrv.setList(songList);
             musicSrv.playSong(oAuthParameters);
             profileName.setText(url + title + artist);
@@ -77,6 +80,7 @@ public class ProfileFragment extends OAuthFragment{
         String song = "12505369";
 
         String url = UrlBuilder.buildUrlWithParameters(getOAuthConnection().getApiUrl() + "/tracks/" + song + ".json", oAuthParameters);
+        mLoadingSong = song;
         setUrlForApiCall(url);
         new GetRequestTask().execute(this);
     }
@@ -120,5 +124,14 @@ public class ProfileFragment extends OAuthFragment{
 
     public void songPicked(View view){
 
+    }
+
+    public void addSong(String id, String url, String title, String artist){
+        ParseObject song = new ParseObject("Song");
+        song.put("songId", id);
+        song.put("url", url);
+        song.put("title", title);
+        song.put("artist", artist);
+        song.saveInBackground();
     }
 }
