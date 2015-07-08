@@ -11,6 +11,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
@@ -157,11 +158,6 @@ public class ProfileFragment extends OAuthFragment{
     }
 
     private void displaySongs(){
-//        Collections.sort(songList, new Comparator<Song>()){
-//            public int compare(Song a, Song b){
-//                return a.getTitle().compareTo(b.getTitle());
-//            }
-//        }
         SongAdapter songAdt = new SongAdapter(getActivity(), songList);
         songView.setAdapter(songAdt);
     }
@@ -189,5 +185,27 @@ public class ProfileFragment extends OAuthFragment{
         song.put("title", title);
         song.put("artist", artist);
         song.saveInBackground();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_shuffle:
+                //shuffle
+                break;
+            case R.id.action_end:
+                musicSrv.stopService(playIntent);
+                musicSrv=null;
+                System.exit(0);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onDestroy() {
+        musicSrv.stopService(playIntent);
+        musicSrv=null;
+        super.onDestroy();
     }
 }
