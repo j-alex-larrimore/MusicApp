@@ -28,6 +28,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import us.theappacademy.oauth.OAuthParameters;
@@ -71,7 +73,6 @@ public class ProfileFragment extends OAuthFragment{
             Log.e("ProfFrag", "TaskFinished" + e);
         }
 
-
     }
 
     @Override
@@ -90,6 +91,8 @@ public class ProfileFragment extends OAuthFragment{
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View fragmentView = inflater.inflate(R.layout.fragment_profile, container, false);
+
+        songView = (ListView)fragmentView.findViewById(R.id.song_list);
 
         profileName = (TextView)fragmentView.findViewById(R.id.profileName);
         userName = (TextView)fragmentView.findViewById(R.id.userName);
@@ -123,7 +126,7 @@ public class ProfileFragment extends OAuthFragment{
         }
     }
 
-    public void getSongList(){
+    private void getSongList(){
         ParseQuery<ParseObject> query = ParseQuery.getQuery("Song");
         query.findInBackground(new FindCallback<ParseObject>() {
             @Override
@@ -137,36 +140,49 @@ public class ProfileFragment extends OAuthFragment{
         });
     }
 
-    public void setSongList(List<ParseObject> list){
+    private void setSongList(List<ParseObject> list){
         for(ParseObject song : list){
             String url = song.get("url").toString();
             String title = song.get("title").toString();
             String artist = song.get("artist").toString();
             Song s = new Song(url, title, artist);
             songList.add(s);
-            Log.i("Frag", "setSongList" + title);
+            Log.i("Frag", "setSongList " + title);
         }
-
+//        addSong("");
+//        addSong("");
+//        addSong("");
+        displaySongs();
         playSongList();
     }
 
-    public void playSongList(){
+    private void displaySongs(){
+//        Collections.sort(songList, new Comparator<Song>()){
+//            public int compare(Song a, Song b){
+//                return a.getTitle().compareTo(b.getTitle());
+//            }
+//        }
+        SongAdapter songAdt = new SongAdapter(getActivity(), songList);
+        songView.setAdapter(songAdt);
+    }
+
+    private void playSongList(){
         musicSrv.setList(songList);
         musicSrv.playSong(oAuthParameters);
     }
 
-    public void addSong(String songID){
+    private void addSong(String songID){
         String url = UrlBuilder.buildUrlWithParameters(getOAuthConnection().getApiUrl() + "/tracks/" + songID + ".json", oAuthParameters);
         mLoadingSong = songID;
         setUrlForApiCall(url);
         new GetRequestTask().execute(this);
     }
 
-    public void songPicked(View view){
+    private void songPicked(View view){
 
     }
 
-    public void addSongToParse(String id, String url, String title, String artist){
+    private void addSongToParse(String id, String url, String title, String artist){
         ParseObject song = new ParseObject("Song");
         song.put("songId", id);
         song.put("url", url);

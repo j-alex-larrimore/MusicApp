@@ -99,6 +99,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     public void setSong(int songIndex){
+
         songPosn = songIndex;
     }
 
