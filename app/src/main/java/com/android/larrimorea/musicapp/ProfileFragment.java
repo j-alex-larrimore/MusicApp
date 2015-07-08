@@ -15,15 +15,20 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.larrimorea.musicapp.R;
+import com.parse.FindCallback;
 import com.parse.ParseObject;
+import com.parse.ParseQuery;
+import com.parse.ParseUser;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import us.theappacademy.oauth.OAuthParameters;
 import us.theappacademy.oauth.task.GetRequestTask;
@@ -58,7 +63,7 @@ public class ProfileFragment extends OAuthFragment{
             String artist = getJsonObject().getJSONObject("user").getString("username");
             Song s = new Song(url, title, artist);
             songList.add(s);
-            addSong(mLoadingSong, url, title, artist);
+            addSongToParse(mLoadingSong, url, title, artist);
             musicSrv.setList(songList);
             musicSrv.playSong(oAuthParameters);
             profileName.setText(url + title + artist);
@@ -76,13 +81,9 @@ public class ProfileFragment extends OAuthFragment{
         oAuthParameters = new OAuthParameters();
         oAuthParameters.addParameter("client_id", getOAuthConnection().getClientID());
 
+        getSongList();
+        //String song = "12505369";
 
-        String song = "12505369";
-
-        String url = UrlBuilder.buildUrlWithParameters(getOAuthConnection().getApiUrl() + "/tracks/" + song + ".json", oAuthParameters);
-        mLoadingSong = song;
-        setUrlForApiCall(url);
-        new GetRequestTask().execute(this);
     }
 
     @Nullable
@@ -122,11 +123,50 @@ public class ProfileFragment extends OAuthFragment{
         }
     }
 
+    public void getSongList(){
+        ParseQuery<ParseObject> query = ParseQuery.getQuery("Song");
+        query.findInBackground(new FindCallback<ParseObject>() {
+            @Override
+            public void done(List<ParseObject> list, com.parse.ParseException e) {
+                if (e == null) {
+                    setSongList(list);
+                } else {
+                    Log.e("ProfileFragment", "setSongListError: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    public void setSongList(List<ParseObject> list){
+        for(ParseObject song : list){
+            String url = song.get("url").toString();
+            String title = song.get("title").toString();
+            String artist = song.get("artist").toString();
+            Song s = new Song(url, title, artist);
+            songList.add(s);
+            Log.i("Frag", "setSongList" + title);
+        }
+
+        playSongList();
+    }
+
+    public void playSongList(){
+        musicSrv.setList(songList);
+        musicSrv.playSong(oAuthParameters);
+    }
+
+    public void addSong(String songID){
+        String url = UrlBuilder.buildUrlWithParameters(getOAuthConnection().getApiUrl() + "/tracks/" + songID + ".json", oAuthParameters);
+        mLoadingSong = songID;
+        setUrlForApiCall(url);
+        new GetRequestTask().execute(this);
+    }
+
     public void songPicked(View view){
 
     }
 
-    public void addSong(String id, String url, String title, String artist){
+    public void addSongToParse(String id, String url, String title, String artist){
         ParseObject song = new ParseObject("Song");
         song.put("songId", id);
         song.put("url", url);
