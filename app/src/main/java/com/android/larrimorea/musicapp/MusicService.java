@@ -23,6 +23,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     private int songPosn;
     private final IBinder musicBind = new MusicBinder();
     private String clientID;
+    OAuthParameters oAuthParameters;
 
     @Override
     public void onCreate() {
@@ -60,11 +61,15 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-
+        if(mp.getCurrentPosition()>0){
+            mp.reset();
+            playNext();
+        }
     }
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
+        mp.reset();
         return false;
     }
 
@@ -78,14 +83,14 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         }
     }
 
-    public void playSong(OAuthParameters oap){
+    public void playSong(){
         player.reset();
 
         Song playSong = songs.get(songPosn);
 
         try{
             //player.setDataSource(getApplicationContext(), trackUri);
-            String url = UrlBuilder.buildUrlWithParameters(playSong.getUrl(), oap);
+            String url = UrlBuilder.buildUrlWithParameters(playSong.getUrl(), oAuthParameters);
 
             player.setDataSource(url);
 
@@ -105,6 +110,50 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     public void setClientID(String id){
         clientID = id;
+    }
+
+    public int getPosn(){
+        return player.getCurrentPosition();
+    }
+
+    public int getDur(){
+        return player.getDuration();
+    }
+
+    public boolean isPng(){
+        return player.isPlaying();
+    }
+
+    public void pausePlayer(){
+        player.pause();
+    }
+
+    public void seek(int posn){
+        player.seekTo(posn);
+    }
+
+    public void go(){
+        player.start();
+    }
+
+    public void playPrev(){
+        songPosn--;
+        if(songPosn<0){
+            songPosn=songs.size()-1;
+        }
+        playSong();
+    }
+
+    public void playNext(){
+        songPosn++;
+        if(songPosn>=songs.size()){
+            songPosn=0;
+        }
+        playSong();
+    }
+
+    public void setoAuthParameters(OAuthParameters oap){
+        oAuthParameters = oap;
     }
 
 }

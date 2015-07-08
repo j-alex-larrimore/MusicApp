@@ -4,8 +4,10 @@ import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.parse.Parse;
 
@@ -16,6 +18,7 @@ import us.theappacademy.oauth.view.OAuthActivity;
 
 
 public class MainActivity extends OAuthActivity {
+    Fragment mFragment;
 
     @Override
     protected Fragment createFragment() {
@@ -38,6 +41,8 @@ public class MainActivity extends OAuthActivity {
     protected void onCreate(Bundle savedInstanceState) {
         oauthConnection = new SoundCloudConnection();
         super.onCreate(savedInstanceState);
+        mFragment = new ProfileFragment();
+
         Parse.enableLocalDatastore(this);
 
         Parse.initialize(this, "geQCZnYWdu5r9622GIzP5Cgz1NTKjAVLn3Dobgdn", "QovVsD8wtmEjfrSkGWxyZRbtvOn8afaIqIBHa0Se");
@@ -47,7 +52,8 @@ public class MainActivity extends OAuthActivity {
 
     @Override
     public void setLayoutView() {
-        replaceCurrentFragment(new ProfileFragment(), false);
+
+        replaceCurrentFragment(mFragment, false);
     }
 
     @Override
@@ -59,5 +65,9 @@ public class MainActivity extends OAuthActivity {
             fragmentTransaction.addToBackStack(null);
         }
         fragmentTransaction.commit();
+    }
+
+    private void songPicked(View view){
+        Log.i("Song Picked", "Song Picked");
     }
 }

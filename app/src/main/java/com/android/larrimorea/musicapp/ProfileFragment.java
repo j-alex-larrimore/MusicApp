@@ -14,7 +14,9 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.MediaController;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,9 +42,7 @@ import us.theappacademy.oauth.util.UrlBuilder;
 import us.theappacademy.oauth.view.OAuthFragment;
 
 
-public class ProfileFragment extends OAuthFragment{
-    private TextView profileName;
-    private TextView userName;
+public class ProfileFragment extends OAuthFragment implements MediaController.MediaPlayerControl, View.OnClickListener {
     private ArrayList<Song> songList = new ArrayList<Song>();
     private ListView songView;
     OAuthParameters oAuthParameters;
@@ -51,14 +51,16 @@ public class ProfileFragment extends OAuthFragment{
     private Intent playIntent;
     private boolean musicBound = false;
     private String mLoadingSong;
+    private View fragmentView;
 
+    private MusicController mController;
+    private boolean paused = false;
+    private boolean playbackPaused = false;
 
     @Override
     public void onTaskFinished(String responseString) {
         JSONObject jsonObject = JsonBuilder.jsonObjectFromString(responseString);
         setJsonObject(jsonObject);
-
-        profileName.setText(responseString);
 
         try {
             String url = getJsonObject().getString("stream_url"); // your URL here
@@ -68,8 +70,7 @@ public class ProfileFragment extends OAuthFragment{
             songList.add(s);
             addSongToParse(mLoadingSong, url, title, artist);
             musicSrv.setList(songList);
-            musicSrv.playSong(oAuthParameters);
-            profileName.setText(url + title + artist);
+            musicSrv.playSong();
         }catch(JSONException e){
             Log.e("ProfFrag", "TaskFinished" + e);
         }
@@ -83,7 +84,7 @@ public class ProfileFragment extends OAuthFragment{
         oAuthParameters = new OAuthParameters();
         oAuthParameters.addParameter("client_id", getOAuthConnection().getClientID());
 
-        getSongList();
+
         //String song = "12505369";
 
     }
@@ -91,12 +92,19 @@ public class ProfileFragment extends OAuthFragment{
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View fragmentView = inflater.inflate(R.layout.fragment_profile, container, false);
+        fragmentView = inflater.inflate(R.layout.fragment_profile, container, false);
 
         songView = (ListView)fragmentView.findViewById(R.id.song_list);
+        songView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View clickView,
+                                    int position, long id) {
+                songPicked(clickView);
+            }
+        });
 
-        profileName = (TextView)fragmentView.findViewById(R.id.profileName);
-        userName = (TextView)fragmentView.findViewById(R.id.userName);
+        setController();
+
+        getSongList();
 
         return fragmentView;
     }
@@ -110,6 +118,7 @@ public class ProfileFragment extends OAuthFragment{
             musicSrv.setList(songList);
             musicSrv.setClientID(oAuthParameters.toString());
             musicBound = true;
+            musicSrv.setoAuthParameters(oAuthParameters);
         }
 
         @Override
@@ -164,7 +173,7 @@ public class ProfileFragment extends OAuthFragment{
 
     private void playSongList(){
         musicSrv.setList(songList);
-        musicSrv.playSong(oAuthParameters);
+        musicSrv.playSong();
     }
 
     private void addSong(String songID){
@@ -174,8 +183,14 @@ public class ProfileFragment extends OAuthFragment{
         new GetRequestTask().execute(this);
     }
 
-    private void songPicked(View view){
-
+    public void songPicked(View view){
+        musicSrv.setSong(Integer.parseInt(view.getTag().toString()));
+        musicSrv.playSong();
+        if(playbackPaused){
+            setController();
+            playbackPaused=false;
+        }
+        mController.show(0);
     }
 
     private void addSongToParse(String id, String url, String title, String artist){
@@ -207,5 +222,136 @@ public class ProfileFragment extends OAuthFragment{
         musicSrv.stopService(playIntent);
         musicSrv=null;
         super.onDestroy();
+    }
+
+    @Override
+    public void start() {
+        musicSrv.go();
+    }
+
+    @Override
+    public void pause() {
+        playbackPaused=true;
+        musicSrv.pausePlayer();
+    }
+
+    @Override
+    public int getDuration() {
+        if(musicSrv!=null && musicBound && musicSrv.isPng()){
+            return musicSrv.getDur();
+        }
+        else return 0;
+    }
+
+    @Override
+    public int getCurrentPosition() {
+        if(musicSrv!=null && musicBound && musicSrv.isPng()){
+            return musicSrv.getPosn();
+        }
+        else return 0;
+    }
+
+    @Override
+    public void seekTo(int pos) {
+        musicSrv.seek(pos);
+    }
+
+    @Override
+    public boolean isPlaying() {
+        if(musicSrv!=null && musicBound){
+            return musicSrv.isPng();
+        }
+        return false;
+    }
+
+    @Override
+    public int getBufferPercentage() {
+        return 0;
+    }
+
+    @Override
+    public boolean canPause() {
+        return true;
+    }
+
+    @Override
+    public boolean canSeekBackward() {
+        return true;
+    }
+
+    @Override
+    public boolean canSeekForward() {
+        return true;
+    }
+
+    @Override
+    public int getAudioSessionId() {
+        return 0;
+    }
+
+    private void setController(){
+        mController = new MusicController(getActivity());
+        mController.setPrevNextListeners(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playNext();
+            }
+        }, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playPrev();
+            }
+        });
+
+        mController.setMediaPlayer(this);
+        mController.setAnchorView(fragmentView.findViewById(R.id.song_list));
+        mController.setEnabled(true);
+    }
+
+    //play next
+    private void playNext(){
+        musicSrv.playNext();
+        if(playbackPaused){
+            setController();
+            playbackPaused=false;
+        }
+        mController.show(0);
+    }
+
+    //play previous
+    private void playPrev(){
+        musicSrv.playPrev();
+        if(playbackPaused){
+            setController();
+            playbackPaused=false;
+        }
+        mController.show(0);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        paused=true;
+    }
+
+    @Override
+    public void onStop() {
+            mController.hide();
+            super.onStop();
+
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if(paused){
+            setController();
+            paused=false;
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        songPicked(v);
     }
 }
