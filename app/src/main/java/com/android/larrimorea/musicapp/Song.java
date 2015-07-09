@@ -9,12 +9,18 @@ public class Song {
     private String mUrl;
     private String mTitle;
     private String mArtist;
+    private String mTrackID;
 
 
-    public Song(String url, String title, String artist){
+    public Song(String url, String title, String artist, String trackID){
         mUrl = url;
         mTitle = title;
         mArtist = artist;
+        mTrackID = trackID;
+    }
+
+    public String getTrackID() {
+        return mTrackID;
     }
 
     public String getUrl() {

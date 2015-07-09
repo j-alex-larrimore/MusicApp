@@ -22,6 +22,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.MediaController;
 import android.widget.TextView;
@@ -86,7 +87,7 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
                 String url = getJsonObject().getString("stream_url"); // your URL here
                 String title = getJsonObject().getString("title");
                 String artist = getJsonObject().getJSONObject("user").getString("username");
-                Song s = new Song(url, title, artist);
+                Song s = new Song(url, title, artist, mLoadingSong);
                 songList.add(s);
                 addSongToParse(mLoadingSong, url, title, artist);
                 displaySongs();
@@ -102,23 +103,72 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
                 Log.e("Frag", "TaskFinishedSearchFor " + e);
             }
 
-            displayInfo();
+            parseSearchResults();
 
         }
 
     }
 
-    private void displayInfo(){
+    private void parseSearchResults(){
+        ArrayList<Song> searchSongs = new ArrayList<Song>();
+
         for (int i = 0; i < mSearchResults.length(); i++){
             try {
                 JSONObject row = mSearchResults.getJSONObject(i);
+                String id = row.getString("id");
                 String url = row.getString("stream_url"); // your URL here
                 String title = row.getString("title");
                 String artist = row.getJSONObject("user").getString("username");
+                Song temp = new Song(url, title, artist, id);
+                searchSongs.add(temp);
             }catch(JSONException e){
                 Log.e("Frag", "DisplayInfo " + e);
             }
         }
+        if(searchSongs.size()>0){
+            displaySearchResults(searchSongs);
+        }
+    }
+
+    private void displaySearchResults(ArrayList<Song> results){
+        AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
+        alert.setTitle("Song Results! Click to add:");
+
+        LinearLayout layout = new LinearLayout(getActivity());
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+       for(final Song temp : results){
+            final TextView input = new TextView(getActivity());
+            input.setText(temp.getArtist() + " " + temp.getTitle());
+            layout.addView(input);
+
+            input.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    addSong(temp.getTrackID());
+                }
+            });
+        }
+
+        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                if(search!= ""){
+                    searchSC(search);
+                    search="";
+                    dialog.cancel();
+                }
+                // Do something with value!
+            }
+        });
+
+        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                dialog.cancel();
+            }
+        });
+
+        alert.setView(layout);
+        alert.show();
     }
 
     @Override
@@ -208,10 +258,11 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
 
     private void setSongList(List<ParseObject> list){
         for(ParseObject song : list){
+            String id = song.get("songId").toString();
             String url = song.get("url").toString();
             String title = song.get("title").toString();
             String artist = song.get("artist").toString();
-            Song s = new Song(url, title, artist);
+            Song s = new Song(url, title, artist, id);
             songList.add(s);
             Log.i("Frag", "setSongList " + title);
         }
