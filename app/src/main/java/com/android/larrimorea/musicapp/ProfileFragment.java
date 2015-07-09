@@ -33,8 +33,10 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,7 +55,8 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
     private ArrayList<Song> songList = new ArrayList<Song>();
     private ListView songView;
     private Button addButton;
-    OAuthParameters oAuthParameters;
+    OAuthParameters oAuthParametersReg;
+    OAuthParameters oAuthParametersSearch;
 
     private MusicService musicSrv;
     private Intent playIntent;
@@ -65,35 +68,66 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
     private boolean paused = false;
     private boolean playbackPaused = false;
 
-    private String newSong = "";
+    private String search = "";
+    private String mTask;
+
+    private JSONArray mSearchResults;
+
+    private TextView test;
 
     @Override
     public void onTaskFinished(String responseString) {
-        JSONObject jsonObject = JsonBuilder.jsonObjectFromString(responseString);
-        setJsonObject(jsonObject);
 
-        try {
-            String url = getJsonObject().getString("stream_url"); // your URL here
-            String title = getJsonObject().getString("title");
-            String artist = getJsonObject().getJSONObject("user").getString("username");
-            Song s = new Song(url, title, artist);
-            songList.add(s);
-            addSongToParse(mLoadingSong, url, title, artist);
-            displaySongs();
-            playSongList();
-        }catch(JSONException e){
-            Log.e("ProfFrag", "TaskFinished" + e);
-            Toast.makeText(getActivity(), "Improper Song ID #", Toast.LENGTH_SHORT).show();
+
+        if(mTask=="addSong") {
+            JSONObject jsonObjectA = JsonBuilder.jsonObjectFromString(responseString);
+            setJsonObject(jsonObjectA);
+            try {
+                String url = getJsonObject().getString("stream_url"); // your URL here
+                String title = getJsonObject().getString("title");
+                String artist = getJsonObject().getJSONObject("user").getString("username");
+                Song s = new Song(url, title, artist);
+                songList.add(s);
+                addSongToParse(mLoadingSong, url, title, artist);
+                displaySongs();
+                playSongList();
+            } catch (JSONException e) {
+                Log.e("ProfFrag", "TaskFinished" + e);
+                Toast.makeText(getActivity(), "Improper Song ID #", Toast.LENGTH_SHORT).show();
+            }
+        }else if(mTask=="searchFor"){
+            try {
+                mSearchResults = new JSONArray(responseString);
+            }catch(JSONException e){
+                Log.e("Frag", "TaskFinishedSearchFor " + e);
+            }
+
+            displayInfo();
+
         }
 
+    }
+
+    private void displayInfo(){
+        for (int i = 0; i < mSearchResults.length(); i++){
+            try {
+                JSONObject row = mSearchResults.getJSONObject(i);
+                String url = row.getString("stream_url"); // your URL here
+                String title = row.getString("title");
+                String artist = row.getJSONObject("user").getString("username");
+            }catch(JSONException e){
+                Log.e("Frag", "DisplayInfo " + e);
+            }
+        }
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        oAuthParameters = new OAuthParameters();
-        oAuthParameters.addParameter("client_id", getOAuthConnection().getClientID());
+        oAuthParametersReg = new OAuthParameters();
+        oAuthParametersReg.addParameter("client_id", getOAuthConnection().getClientID());
+        oAuthParametersSearch = oAuthParametersReg;
 
 
         //String song = "12505369";
@@ -104,6 +138,8 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         fragmentView = inflater.inflate(R.layout.fragment_profile, container, false);
+
+        test = (TextView)fragmentView.findViewById(R.id.test);
 
         addButton = (Button)fragmentView.findViewById(R.id.addButton);
         addButton.setOnClickListener(new View.OnClickListener() {
@@ -136,9 +172,9 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
             MusicService.MusicBinder binder = (MusicService.MusicBinder)service;
             musicSrv = binder.getService();
             musicSrv.setList(songList);
-            musicSrv.setClientID(oAuthParameters.toString());
+            musicSrv.setClientID(oAuthParametersReg.toString());
             musicBound = true;
-            musicSrv.setoAuthParameters(oAuthParameters);
+            musicSrv.setoAuthParameters(oAuthParametersReg);
         }
 
         @Override
@@ -197,9 +233,10 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
     }
 
     private void addSong(String songID){
-        String url = UrlBuilder.buildUrlWithParameters(getOAuthConnection().getApiUrl() + "/tracks/" + songID + ".json", oAuthParameters);
+        String url = UrlBuilder.buildUrlWithParameters(getOAuthConnection().getApiUrl() + "/tracks/" + songID + ".json", oAuthParametersReg);
         mLoadingSong = songID;
         setUrlForApiCall(url);
+        mTask="addSong";
         new GetRequestTask().execute(this);
     }
 
@@ -372,19 +409,12 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
 
     @Override
     public void onClick(View v) {
-//        if(v =){
-//            songPicked(v);
-//        }
-//        else{
-//            makePopup();
-//        }
-
     }
 
     public void makePopup(){
         AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
 
-        alert.setTitle("Enter your song's id #");
+        alert.setTitle("Search for: ");
 
 // Set an EditText view to get user input
         final EditText input = new EditText(getActivity());
@@ -398,7 +428,7 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                newSong = s.toString();
+                search = s.toString();
             }
 
             @Override
@@ -409,11 +439,10 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
 
         alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
-                if(newSong!= ""){
-                    addSong(newSong);
+                if(search!= ""){
+                    searchSC(search);
+                    search="";
                     dialog.cancel();
-                    InputMethodManager inputManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    inputManager.hideSoftInputFromWindow(fragmentView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                 }
                 // Do something with value!
             }
@@ -422,11 +451,17 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
         alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
                 dialog.cancel();
-                InputMethodManager inputManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                inputManager.hideSoftInputFromWindow(fragmentView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
             }
         });
 
         alert.show();
+    }
+
+    private void searchSC(String searchFor){
+        oAuthParametersSearch.addParameter("q", searchFor);
+        String url = UrlBuilder.buildUrlWithParameters(getOAuthConnection().getApiUrl() + "/tracks/", oAuthParametersSearch);
+        setUrlForApiCall(url);
+        mTask="searchFor";
+        new GetRequestTask().execute(this);
     }
 }
