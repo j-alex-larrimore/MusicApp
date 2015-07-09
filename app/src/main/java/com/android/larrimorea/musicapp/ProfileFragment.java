@@ -509,6 +509,7 @@ public class ProfileFragment extends OAuthFragment implements MediaController.Me
     }
 
     private void searchSC(String searchFor){
+        searchFor = searchFor.replaceAll(" ", "_").toLowerCase();
         oAuthParametersSearch.addParameter("q", searchFor);
         String url = UrlBuilder.buildUrlWithParameters(getOAuthConnection().getApiUrl() + "/tracks/", oAuthParametersSearch);
         setUrlForApiCall(url);
